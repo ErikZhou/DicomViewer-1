@@ -115,7 +115,19 @@ namespace CSCustomDisplay
             return false;
         }
 
-        public string GetTag(unsinged short group, unsinged short element)
+        private static int GetBitRange(int data, int offset, int count)
+        {
+            return data << offset >> (32 - count);
+        }
+        private static string ConvertLinearToString(ushort data)
+        {
+            var n = GetBitRange(data, 16, 5);
+            var y = GetBitRange(data, 21, 11);
+            var value = y * Math.Pow(2, n);
+            return value.ToString();
+        }
+
+        public string GetTag(ushort group, ushort element)
         {
             if(m_dcmFile == null)
                 throw new Exception("Dicom file is not open");
@@ -125,9 +137,9 @@ namespace CSCustomDisplay
             
             var value = "";
             if (group < 0x0008)
-                value = mi.Get(group, element);
+                value = ConvertLinearToString(mi.Get(group, element));
             else
-                value = ds.Get(group, element);
+                value = ConvertLinearToString(ds.Get(group, element));
                    
             return value;
         }
@@ -452,7 +464,8 @@ namespace CSCustomDisplay
                         tagValue = string.Format("{0} X {1}", m_dcmImage.Width, m_dcmImage.Height);
                     else
                         tagValue = "col X row";
-                    msSize = g.MeasureString(tagValue, font);
+                    var msSize = g.MeasureString(tagValue, font);
+                    PointF drawPos= new PointF();
                     drawPos.X = ClientSize.Width - msSize.Width - fGap;
                     drawPos.Y -= (fGap + msSize.Height);
                     DrawShadowString(g, tagValue, drawPos, font);
